@@ -37,6 +37,13 @@ internal static class ExecApprovalEvaluator
             && !approvedByAsk)
             return ExecHostPolicyDecision.Deny(ExecApprovalV2Result.AllowlistMiss("allowlist-miss"));
 
+        // Step 4.5: ask=deny — non-interactive fallback (AskFallback=Deny is the store default).
+        // Fires only when no pre-authorization is in place (AllowlistSatisfied=false).
+        // When AllowlistSatisfied=true the allowlist already answered the question without
+        // any prompt, so AskFallback is irrelevant and execution proceeds to Allow.
+        if (context.Ask == ExecAsk.Deny && approvalDecision is null && !context.AllowlistSatisfied)
+            return ExecHostPolicyDecision.Deny(ExecApprovalV2Result.AskDeny("ask=deny"));
+
         // Step 5: allow.
         return ExecHostPolicyDecision.Allow(approvedByAsk);
     }

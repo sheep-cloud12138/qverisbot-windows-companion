@@ -65,7 +65,22 @@ internal static class ExecAllowlistMatcher
 
     // Inner check on an already-normalized pattern — single source of truth for the rule.
     private static bool IsValidNormalizedPattern(string normalizedPattern)
-        => normalizedPattern.Contains('/');
+        => normalizedPattern.Contains('/') && !HasMalformedDoubleStars(normalizedPattern);
+
+    // ** is valid only at segment boundaries: preceded by start-of-string or '/', followed by '/' or end.
+    // e.g. "C:/tools**" and "**suffix" are malformed and must fail-closed.
+    private static bool HasMalformedDoubleStars(string normalizedPattern)
+    {
+        for (var i = 0; i < normalizedPattern.Length - 1; i++)
+        {
+            if (normalizedPattern[i] != '*' || normalizedPattern[i + 1] != '*') continue;
+            var precededByBoundary = i == 0 || normalizedPattern[i - 1] == '/';
+            var followedByBoundary = i + 2 >= normalizedPattern.Length || normalizedPattern[i + 2] == '/';
+            if (!precededByBoundary || !followedByBoundary) return true;
+            i++; // skip second *
+        }
+        return false;
+    }
 
     // Normalizes path separators only.
     // Case insensitivity is delegated to the regex engine (IgnoreCase | CultureInvariant)

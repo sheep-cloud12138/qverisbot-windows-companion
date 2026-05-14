@@ -862,4 +862,139 @@ public class ExecApprovalV2EvaluatorTests
         Assert.Equal(satisfiedBefore, ctx.AllowlistSatisfied);
         Assert.Equal(matchBefore, ctx.AllowlistMatch);
     }
+
+    // ── ExecAsk.Deny — step 2.5 (blocking fix from review) ───────────────────
+
+    [Fact]
+    public void AskDeny_SecurityFull_NoDecision_IsDenied()
+    {
+        // security=Full, ask=Deny, approvalDecision=null => AskDeny (policy bypass reported by Shanselman).
+        var ctx = MakeContext(security: ExecSecurity.Full, ask: ExecAsk.Deny);
+        AssertDeny(ExecApprovalEvaluator.Evaluate(ctx, null), ExecApprovalV2Code.AskDeny);
+    }
+
+    [Fact]
+    public void AskDeny_AllowlistSatisfied_NoDecision_IsAllowed()
+    {
+        // security=Allowlist, ask=Deny, allowlist satisfied, approvalDecision=null => Allow.
+        // The allowlist pre-authorized the tool without any prompt; AskFallback is irrelevant
+        // because no ask would have been issued anyway. Step 4.5 guards on !AllowlistSatisfied.
+        var res = Res("rg", @"C:\tools\rg.exe");
+        var entry = Entry(@"C:\tools\*");
+        var ctx = MakeContext(
+            security: ExecSecurity.Allowlist,
+            ask: ExecAsk.Deny,
+            allowlistResolutions: [res],
+            allowlistMatches: [entry]);
+        var result = Assert.IsType<ExecHostPolicyDecision.AllowOutcome>(
+            ExecApprovalEvaluator.Evaluate(ctx, null));
+        Assert.False(result.ApprovedByAsk);
+    }
+
+    [Fact]
+    public void AskDeny_SecurityDenyWins_OverAskDeny()
+    {
+        // security=Deny at step 1 must still win even when ask=Deny.
+        var ctx = MakeContext(security: ExecSecurity.Deny, ask: ExecAsk.Deny);
+        AssertDeny(ExecApprovalEvaluator.Evaluate(ctx, null), ExecApprovalV2Code.SecurityDeny);
+    }
+
+    [Fact]
+    public void AskDeny_WithApprovalDecision_DoesNotFire()
+    {
+        // Step 2.5 only fires when approvalDecision is null.
+        // An explicit approval decision bypasses ask=deny.
+        var ctx = MakeContext(security: ExecSecurity.Full, ask: ExecAsk.Deny);
+        var result = Assert.IsType<ExecHostPolicyDecision.AllowOutcome>(
+            ExecApprovalEvaluator.Evaluate(ctx, ExecApprovalDecision.AllowOnce));
+        Assert.True(result.ApprovedByAsk);
+    }
+
+    [Fact]
+    public void AskDeny_UserDeniedWins_OverAskDeny()
+    {
+        // approvalDecision=Deny at step 2 must win before step 2.5 (ask=Deny) fires.
+        var ctx = MakeContext(security: ExecSecurity.Full, ask: ExecAsk.Deny);
+        AssertDeny(ExecApprovalEvaluator.Evaluate(ctx, ExecApprovalDecision.Deny), ExecApprovalV2Code.UserDenied);
+    }
+
+    [Fact]
+    public void AskDeny_AllowlistNotSatisfied_ProducesAllowlistMiss_NotAskDeny()
+    {
+        // security=Allowlist, ask=Deny, no match, no decision.
+        // Step 4 fires (allowlist miss) before step 4.5 (ask=deny) is reached.
+        // The allowlist miss is the precise failure reason; AskDeny does not override it.
+        var res = Res("rg", @"C:\tools\rg.exe");
+        var ctx = MakeContext(
+            security: ExecSecurity.Allowlist,
+            ask: ExecAsk.Deny,
+            allowlistResolutions: [res],
+            allowlistMatches: []);
+        AssertDeny(ExecApprovalEvaluator.Evaluate(ctx, null), ExecApprovalV2Code.AllowlistMiss);
+    }
+
+    // ── Matcher — malformed ** patterns (non-blocking hardening from review) ───
+
+    [Fact]
+    public void Matcher_MalformedDoubleStar_TrailingAfterLiteral_DoesNotMatch()
+    {
+        // C:\tools** normalizes to C:/tools** — ** not at segment boundary.
+        // Must fail-closed: the pattern is invalid and no match is produced.
+        var entries = new[] { Entry(@"C:\tools**") };
+        var res = Res("rg", @"C:\tools\rg.exe");
+        Assert.Null(ExecAllowlistMatcher.Match(entries, res));
+    }
+
+    [Fact]
+    public void Matcher_MalformedDoubleStar_PrefixBeforeLiteral_DoesNotMatch()
+    {
+        // **tools/rg.exe — ** at start but followed by 't' (not '/').
+        var entries = new[] { Entry(@"**tools/rg.exe") };
+        var res = Res("rg", @"C:\tools\rg.exe");
+        Assert.Null(ExecAllowlistMatcher.Match(entries, res));
+    }
+
+    [Fact]
+    public void Matcher_MalformedDoubleStar_EmbeddedInSegment_DoesNotMatch()
+    {
+        // C:\too**ls\rg.exe — ** inside a segment name.
+        var entries = new[] { Entry(@"C:\too**ls\rg.exe") };
+        var res = Res("rg", @"C:\tools\rg.exe");
+        Assert.Null(ExecAllowlistMatcher.Match(entries, res));
+    }
+
+    [Fact]
+    public void IsValidPattern_MalformedDoubleStar_ReturnsFalse()
+    {
+        Assert.False(ExecAllowlistMatcher.IsValidPattern(@"C:\tools**"));
+        Assert.False(ExecAllowlistMatcher.IsValidPattern(@"**tools/rg.exe"));
+    }
+
+    [Fact]
+    public void IsValidPattern_WellFormedDoubleStar_ReturnsTrue()
+    {
+        // Segment-boundary ** patterns must remain valid.
+        Assert.True(ExecAllowlistMatcher.IsValidPattern(@"C:\**\rg.exe"));
+        Assert.True(ExecAllowlistMatcher.IsValidPattern(@"**/rg.exe"));
+        Assert.True(ExecAllowlistMatcher.IsValidPattern(@"C:\tools\**"));
+    }
+
+    [Fact]
+    public void Matcher_TwoConsecutiveDoubleStars_SeparatedBySlash_IsValid()
+    {
+        // **/** — each ** is at a segment boundary; the pattern is valid and matches any path.
+        var entries = new[] { Entry(@"**/**") };
+        var res = Res("rg", @"C:\tools\rg.exe");
+        Assert.NotNull(ExecAllowlistMatcher.Match(entries, res));
+    }
+
+    [Fact]
+    public void Matcher_MalformedDoubleStar_InMiddleOfSegment_WithValidDoubleStarElsewhere_IsInvalid()
+    {
+        // C:\tools\**\bin** — the first ** is valid but the second is malformed (no trailing separator).
+        // The whole pattern must be rejected fail-closed.
+        var entries = new[] { Entry(@"C:\tools\**\bin**") };
+        var res = Res("rg", @"C:\tools\bin\rg.exe");
+        Assert.Null(ExecAllowlistMatcher.Match(entries, res));
+    }
 }
