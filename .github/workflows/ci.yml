@@ -270,15 +270,21 @@ jobs:
     - name: Restore
       run: dotnet restore src/OpenClaw.Tray.WinUI -r ${{ matrix.rid }}
 
-    - name: Patch MSIX manifest version
+    - name: Patch MSIX manifest metadata
       shell: pwsh
       run: |
         $version = "${{ needs.test.outputs.majorMinorPatch }}.0"
+        $isAlpha = "${{ startsWith(github.ref, 'refs/tags/v') && contains(github.ref_name, '-') }}" -eq "true"
+        $identityName = if ($isAlpha) { "OpenClaw.Companion.Alpha" } else { "OpenClaw.Companion" }
+        $displayName = if ($isAlpha) { "OpenClaw Companion Alpha" } else { "OpenClaw Companion" }
         $manifest = "src/OpenClaw.Tray.WinUI/Package.appxmanifest"
         [xml]$xml = Get-Content $manifest
+        $xml.Package.Identity.Name = $identityName
         $xml.Package.Identity.Version = $version
+        $xml.Package.Properties.DisplayName = $displayName
+        $xml.Package.Applications.Application.VisualElements.DisplayName = $displayName
         $xml.Save((Resolve-Path $manifest))
-        Write-Host "Patched MSIX manifest version to $version"
+        Write-Host "Patched MSIX manifest to identity $identityName, display name '$displayName', version $version"
 
     - name: Build MSIX Package
       run: >
@@ -306,29 +312,6 @@ jobs:
         Write-Host "Found: $($msix.FullName)"
         echo "msix_path=$($msix.FullName)" >> $env:GITHUB_OUTPUT
         echo "msix_name=$($msix.Name)" >> $env:GITHUB_OUTPUT
-
-    - name: Sign MSIX
-      if: startsWith(github.ref, 'refs/tags/v') && matrix.rid != 'win-arm64'
-      uses: azure/login@v3
-      with:
-        creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}"}'
-
-    - name: Sign MSIX Package
-      if: startsWith(github.ref, 'refs/tags/v') && matrix.rid != 'win-arm64'
-      uses: azure/trusted-signing-action@v1
-      with:
-        azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-        azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
-        azure-client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
-        endpoint: https://wus2.codesigning.azure.net/
-        signing-account-name: hanselman
-        certificate-profile-name: WindowsEdgeLight
-        files-folder: src/OpenClaw.Tray.WinUI/AppPackages
-        files-folder-filter: msix
-        files-folder-depth: 3
-        file-digest: SHA256
-        timestamp-rfc3161: http://timestamp.acs.microsoft.com
-        timestamp-digest: SHA256
 
     - name: Upload MSIX Artifact
       uses: actions/upload-artifact@v7
@@ -424,13 +407,14 @@ jobs:
       if: steps.msix-x64.outcome == 'success' || steps.msix-arm64.outcome == 'success'
       shell: pwsh
       run: |
+        $assetVersion = "${{ needs.test.outputs.semVer }}"
         $x64 = Get-ChildItem -Path artifacts/msix-x64 -Filter "*.msix" | Select-Object -First 1
         $arm64 = Get-ChildItem -Path artifacts/msix-arm64 -Filter "*.msix" | Select-Object -First 1
-        if ($x64) { Copy-Item $x64.FullName "OpenClawTray-${{ needs.test.outputs.majorMinorPatch }}-win-x64.msix" }
-        if ($arm64) { Copy-Item $arm64.FullName "OpenClawTray-${{ needs.test.outputs.majorMinorPatch }}-win-arm64.msix" }
+        if ($x64) { Copy-Item $x64.FullName "OpenClawCompanion-$assetVersion-win-x64.msix" }
+        if ($arm64) { Copy-Item $arm64.FullName "OpenClawCompanion-$assetVersion-win-arm64.msix" }
 
-    # Sign ARM64 artifacts on x64 runner (ARM64 runner can't run the signing dlib)
-    - name: Azure Login for ARM64 Signing
+    # Sign release artifacts on the x64 runner (ARM64 runner can't run the signing dlib).
+    - name: Azure Login for Release Signing
       uses: azure/login@v3
       with:
         creds: '{"clientId":"${{ secrets.AZURE_CLIENT_ID }}","clientSecret":"${{ secrets.AZURE_CLIENT_SECRET }}","subscriptionId":"${{ secrets.AZURE_SUBSCRIPTION_ID }}","tenantId":"${{ secrets.AZURE_TENANT_ID }}"}'
@@ -450,8 +434,8 @@ jobs:
         timestamp-rfc3161: http://timestamp.acs.microsoft.com
         timestamp-digest: SHA256
 
-    - name: Sign ARM64 MSIX
-      if: steps.msix-arm64.outcome == 'success'
+    - name: Sign Release MSIX Packages
+      if: steps.msix-x64.outcome == 'success' || steps.msix-arm64.outcome == 'success'
       uses: azure/trusted-signing-action@v1
       with:
         azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
@@ -460,9 +444,9 @@ jobs:
         endpoint: https://wus2.codesigning.azure.net/
         signing-account-name: hanselman
         certificate-profile-name: WindowsEdgeLight
-        files-folder: artifacts/msix-arm64
+        files-folder: .
         files-folder-filter: msix
-        files-folder-depth: 3
+        files-folder-depth: 1
         file-digest: SHA256
         timestamp-rfc3161: http://timestamp.acs.microsoft.com
         timestamp-digest: SHA256
@@ -470,8 +454,8 @@ jobs:
     # Create ZIP files for Updatum auto-update (needs "win-x64" in filename)
     - name: Create Release ZIPs
       run: |
-        Compress-Archive -Path artifacts/tray-win-x64/* -DestinationPath OpenClawTray-${{ needs.test.outputs.majorMinorPatch }}-win-x64.zip
-        Compress-Archive -Path artifacts/tray-win-arm64/* -DestinationPath OpenClawTray-${{ needs.test.outputs.majorMinorPatch }}-win-arm64.zip
+        Compress-Archive -Path artifacts/tray-win-x64/* -DestinationPath OpenClawTray-${{ needs.test.outputs.semVer }}-win-x64.zip
+        Compress-Archive -Path artifacts/tray-win-arm64/* -DestinationPath OpenClawTray-${{ needs.test.outputs.semVer }}-win-arm64.zip
 
     # Inno Setup installer for x64
     - name: Install Inno Setup
@@ -530,20 +514,22 @@ jobs:
         files: |
           Output/OpenClawTray-Setup-x64.exe
           Output/OpenClawTray-Setup-arm64.exe
-          OpenClawTray-${{ needs.test.outputs.majorMinorPatch }}-win-x64.zip
-          OpenClawTray-${{ needs.test.outputs.majorMinorPatch }}-win-arm64.zip
-          OpenClawTray-${{ needs.test.outputs.majorMinorPatch }}-win-x64.msix
-          OpenClawTray-${{ needs.test.outputs.majorMinorPatch }}-win-arm64.msix
+          OpenClawTray-${{ needs.test.outputs.semVer }}-win-x64.zip
+          OpenClawTray-${{ needs.test.outputs.semVer }}-win-arm64.zip
+          OpenClawCompanion-${{ needs.test.outputs.semVer }}-win-x64.msix
+          OpenClawCompanion-${{ needs.test.outputs.semVer }}-win-arm64.msix
+        prerelease: ${{ contains(github.ref_name, '-') }}
+        make_latest: ${{ contains(github.ref_name, '-') && 'false' || 'true' }}
         body: |
           ## OpenClaw Windows Hub ${{ github.ref_name }}
 
           ### Downloads
           - **Installer (x64)**: `OpenClawTray-Setup-x64.exe` - Intel/AMD 64-bit
           - **Installer (ARM64)**: `OpenClawTray-Setup-arm64.exe` - Windows on ARM (Surface, etc.)
-          - **Portable x64**: `OpenClawTray-${{ needs.test.outputs.majorMinorPatch }}-win-x64.zip`
-          - **Portable ARM64**: `OpenClawTray-${{ needs.test.outputs.majorMinorPatch }}-win-arm64.zip`
-          - **MSIX x64**: `OpenClawTray-${{ needs.test.outputs.majorMinorPatch }}-win-x64.msix` - Packaged (camera/mic consent)
-          - **MSIX ARM64**: `OpenClawTray-${{ needs.test.outputs.majorMinorPatch }}-win-arm64.msix` - Packaged (camera/mic consent)
+          - **Portable x64**: `OpenClawTray-${{ needs.test.outputs.semVer }}-win-x64.zip`
+          - **Portable ARM64**: `OpenClawTray-${{ needs.test.outputs.semVer }}-win-arm64.zip`
+          - **MSIX x64**: `OpenClawCompanion-${{ needs.test.outputs.semVer }}-win-x64.msix` - Packaged (camera/mic consent)
+          - **MSIX ARM64**: `OpenClawCompanion-${{ needs.test.outputs.semVer }}-win-arm64.msix` - Packaged (camera/mic consent)
 
           ### Features
           - 🦞 System tray integration with gateway status

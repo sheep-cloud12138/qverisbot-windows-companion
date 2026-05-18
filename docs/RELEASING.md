@@ -16,6 +16,17 @@ The canonical release flow is **tag-driven**, not manual file patching.
    ```
 3. CI (`.github/workflows/ci.yml`) builds/signs/publishes artifacts and creates the GitHub release from that tag.
 
+## Alpha MSIX releases
+
+Alpha tags use the same signed CI release pipeline, but GitHub marks them as pre-releases and not latest releases so normal updater checks do not offer them to users.
+
+```powershell
+git tag -a vX.Y.Z-alpha.1 -m "Alpha vX.Y.Z-alpha.1"
+git push origin vX.Y.Z-alpha.1
+```
+
+The stable MSIX package identity is `OpenClaw.Companion`. Alpha-tagged MSIX packages are patched during CI to use `OpenClaw.Companion.Alpha`, which lets testers install the signed alpha package without upgrading a stable MSIX install. Command Palette packaging remains separate from the MSIX package.
+
 ## Why this is the correct flow
 
 - `GitVersion.yml` is configured for `ContinuousDelivery` with `tag-prefix: 'v'`.
