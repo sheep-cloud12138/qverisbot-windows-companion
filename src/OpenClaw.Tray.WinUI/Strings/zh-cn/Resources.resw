@@ -374,6 +374,29 @@
   <data name="Update_DownloadButton" xml:space="preserve">
     <value>下载并安装</value>
   </data>
+  <data name="Update_Title_UpToDate" xml:space="preserve">
+    <value>已是最新版本</value>
+  </data>
+  <data name="Update_Message_UpToDate" xml:space="preserve">
+    <value>您正在使用最新版本 (v{0})。</value>
+  </data>
+  <data name="Update_Title_Failed" xml:space="preserve">
+    <value>无法检查更新</value>
+  </data>
+  <data name="Update_Message_Failed" xml:space="preserve">
+    <value>检查更新时出错。
+
+{0}</value>
+  </data>
+  <data name="Update_Title_Skipped" xml:space="preserve">
+    <value>已跳过更新检查</value>
+  </data>
+  <data name="Update_Message_Skipped_Debug" xml:space="preserve">
+    <value>调试版本已禁用更新检查。</value>
+  </data>
+  <data name="Update_OK" xml:space="preserve">
+    <value>确定</value>
+  </data>
   <data name="Menu_OpenDashboard" xml:space="preserve">
     <value>打开仪表板</value>
   </data>
@@ -1477,9 +1500,6 @@
   </data>
   <data name="AboutPage_TextBlock_19.Text" xml:space="preserve">
     <value>OpenClaw Hub</value>
-  </data>
-  <data name="VersionText.Text" xml:space="preserve">
-    <value>v0.1.0</value>
   </data>
   <data name="AboutPage_TextBlock_23.Text" xml:space="preserve">
     <value>.NET 10 / WinUI 3 / WinAppSDK 1.8</value>

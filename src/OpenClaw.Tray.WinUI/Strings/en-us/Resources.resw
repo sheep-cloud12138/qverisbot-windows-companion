@@ -403,6 +403,29 @@
   <data name="Update_DownloadButton" xml:space="preserve">
     <value>Download &amp; Install</value>
   </data>
+  <data name="Update_Title_UpToDate" xml:space="preserve">
+    <value>You're up to date</value>
+  </data>
+  <data name="Update_Message_UpToDate" xml:space="preserve">
+    <value>You're running the latest version (v{0}).</value>
+  </data>
+  <data name="Update_Title_Failed" xml:space="preserve">
+    <value>Couldn't check for updates</value>
+  </data>
+  <data name="Update_Message_Failed" xml:space="preserve">
+    <value>Something went wrong while checking for updates.
+
+{0}</value>
+  </data>
+  <data name="Update_Title_Skipped" xml:space="preserve">
+    <value>Update check skipped</value>
+  </data>
+  <data name="Update_Message_Skipped_Debug" xml:space="preserve">
+    <value>Update checks are disabled in debug builds.</value>
+  </data>
+  <data name="Update_OK" xml:space="preserve">
+    <value>OK</value>
+  </data>
   <!-- Tray menu items -->
   <data name="Menu_OpenDashboard" xml:space="preserve">
     <value>Open Dashboard</value>
@@ -1526,9 +1549,6 @@ On your gateway host (Mac/Linux), run:
   </data>
   <data name="AboutPage_TextBlock_19.Text" xml:space="preserve">
     <value>OpenClaw Hub</value>
-  </data>
-  <data name="VersionText.Text" xml:space="preserve">
-    <value>v0.1.0</value>
   </data>
   <data name="AboutPage_TextBlock_23.Text" xml:space="preserve">
     <value>.NET 10 / WinUI 3 / WinAppSDK 1.8</value>

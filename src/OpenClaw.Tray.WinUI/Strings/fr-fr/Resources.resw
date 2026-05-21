@@ -374,6 +374,29 @@
   <data name="Update_DownloadButton" xml:space="preserve">
     <value>Télécharger &amp; Installer</value>
   </data>
+  <data name="Update_Title_UpToDate" xml:space="preserve">
+    <value>Vous êtes à jour</value>
+  </data>
+  <data name="Update_Message_UpToDate" xml:space="preserve">
+    <value>Vous utilisez la dernière version (v{0}).</value>
+  </data>
+  <data name="Update_Title_Failed" xml:space="preserve">
+    <value>Impossible de vérifier les mises à jour</value>
+  </data>
+  <data name="Update_Message_Failed" xml:space="preserve">
+    <value>Une erreur s'est produite lors de la vérification des mises à jour.
+
+{0}</value>
+  </data>
+  <data name="Update_Title_Skipped" xml:space="preserve">
+    <value>Vérification ignorée</value>
+  </data>
+  <data name="Update_Message_Skipped_Debug" xml:space="preserve">
+    <value>La vérification des mises à jour est désactivée dans les builds de débogage.</value>
+  </data>
+  <data name="Update_OK" xml:space="preserve">
+    <value>OK</value>
+  </data>
   <data name="Menu_OpenDashboard" xml:space="preserve">
     <value>Ouvrir le tableau de bord</value>
   </data>
@@ -1084,7 +1107,7 @@ Sur votre hôte passerelle (Mac/Linux), exécutez :
     <value>OpenClaw a encore besoin d’être configuré avant de pouvoir ouvrir le Hub. Utilisez Retour pour revenir à l’assistant ou aux étapes de connexion, corrigez la configuration manquante, puis réessayez Terminer.</value>
   </data>
   <data name="Onboarding_IncompleteSetup_Close" xml:space="preserve">
-    <value>D'accord</value>
+    <value>OK</value>
   </data>
   <data name="Onboarding_Welcome_Title" xml:space="preserve">
     <value>Bienvenue dans OpenClaw</value>
@@ -1477,9 +1500,6 @@ Sur votre hôte passerelle (Mac/Linux), exécutez :
   </data>
   <data name="AboutPage_TextBlock_19.Text" xml:space="preserve">
     <value>OpenClaw Hub</value>
-  </data>
-  <data name="VersionText.Text" xml:space="preserve">
-    <value>v0.1.0</value>
   </data>
   <data name="AboutPage_TextBlock_23.Text" xml:space="preserve">
     <value>.NET 10 / WinUI 3 / WinAppSDK 1.8</value>

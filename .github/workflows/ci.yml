@@ -281,18 +281,19 @@ jobs:
     - name: Patch MSIX manifest metadata
       shell: pwsh
       run: |
-        $version = "${{ needs.test.outputs.majorMinorPatch }}.0"
+        # NOTE: Identity/Version is auto-synced from /p:Version by the SyncAppxManifestVersion
+        # target in OpenClaw.Tray.WinUI.csproj during the MSIX build below; we only patch the
+        # alpha/non-alpha identity and display name here.
         $isAlpha = "${{ startsWith(github.ref, 'refs/tags/v') && contains(github.ref_name, '-') }}" -eq "true"
         $identityName = if ($isAlpha) { "OpenClaw.Companion.Alpha" } else { "OpenClaw.Companion" }
         $displayName = if ($isAlpha) { "OpenClaw Companion Alpha" } else { "OpenClaw Companion" }
         $manifest = "src/OpenClaw.Tray.WinUI/Package.appxmanifest"
         [xml]$xml = Get-Content $manifest
         $xml.Package.Identity.Name = $identityName
-        $xml.Package.Identity.Version = $version
         $xml.Package.Properties.DisplayName = $displayName
         $xml.Package.Applications.Application.VisualElements.DisplayName = $displayName
         $xml.Save((Resolve-Path $manifest))
-        Write-Host "Patched MSIX manifest to identity $identityName, display name '$displayName', version $version"
+        Write-Host "Patched MSIX manifest to identity $identityName, display name '$displayName' (Version will be synced from /p:Version by msbuild target)"
 
     - name: Build MSIX Package
       run: >
