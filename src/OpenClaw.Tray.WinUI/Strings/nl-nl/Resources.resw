@@ -1541,7 +1541,7 @@ Voer op uw gateway-host (Mac/Linux) uit:
     <value>Wissen</value>
   </data>
   <data name="BindingsPage_TextBlock_16.Text" xml:space="preserve">
-    <value>🔀 Koppelingen</value>
+    <value>Koppelingen</value>
   </data>
   <data name="BindingsPage_TextBlock_17.Text" xml:space="preserve">
     <value>Regels voor berichtroutering</value>

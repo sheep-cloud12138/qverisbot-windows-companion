@@ -1540,7 +1540,7 @@ Sur votre hôte passerelle (Mac/Linux), exécutez :
     <value>Effacer</value>
   </data>
   <data name="BindingsPage_TextBlock_16.Text" xml:space="preserve">
-    <value>🔀 Liaisons</value>
+    <value>Liaisons</value>
   </data>
   <data name="BindingsPage_TextBlock_17.Text" xml:space="preserve">
     <value>Règles de routage des messages</value>

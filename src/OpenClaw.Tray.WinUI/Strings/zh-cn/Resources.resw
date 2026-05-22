@@ -1540,7 +1540,7 @@
     <value>清除</value>
   </data>
   <data name="BindingsPage_TextBlock_16.Text" xml:space="preserve">
-    <value>🔀 绑定</value>
+    <value>绑定</value>
   </data>
   <data name="BindingsPage_TextBlock_17.Text" xml:space="preserve">
     <value>消息路由规则</value>
