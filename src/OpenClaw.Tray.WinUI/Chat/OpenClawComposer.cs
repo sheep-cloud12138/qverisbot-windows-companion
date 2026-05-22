@@ -232,7 +232,7 @@ public sealed class OpenClawComposer : Component<OpenClawComposerProps>
                             IsEnabled = false,
                             FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
                             FontSize = 10,
-                            Padding = new Thickness(4, 6, 4, 2),
+                            Padding = new Thickness(4, 2, 4, 2),
                             IsHitTestVisible = false,
                         });
                     }
@@ -244,7 +244,7 @@ public sealed class OpenClawComposer : Component<OpenClawComposerProps>
                             Tag = session.Id,
                             Padding = groups.Length > 1
                                 ? new Thickness(16, 4, 4, 4)
-                                : new Thickness(4, 4, 4, 4),
+                                : new Thickness(8, 4, 4, 4),
                         };
                         cb.Items.Add(item);
                         if (session.Id == (Props.ChannelId ?? ""))

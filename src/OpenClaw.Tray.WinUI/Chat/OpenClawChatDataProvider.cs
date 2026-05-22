@@ -120,6 +120,9 @@ public sealed class OpenClawChatDataProvider : IChatDataProvider
 
     public string DisplayName => "OpenClaw gateway";
 
+    /// <summary>Last-known chat state from a previous session, used for pre-connection UI.</summary>
+    internal LastChatState? CachedLastChatState => _lastChatState;
+
     public event EventHandler<ChatDataChangedEventArgs>? Changed;
     public event EventHandler<ChatProviderNotificationEventArgs>? NotificationRequested;
 
@@ -147,12 +150,17 @@ public sealed class OpenClawChatDataProvider : IChatDataProvider
         _status = bridge.CurrentStatus;
         _persistedAbortedIds = LoadAbortedIds();
         _toolMetaCache = LoadToolMetaCache(_toolMetaCacheFilePath);
+        _lastChatState = LoadLastChatState();
 
         // Seed models from whatever the bridge already knows about (a connect
         // that completed before the provider was constructed will have its
         // models.list snapshot cached on the bridge).
         if (bridge.GetCurrentModelsList() is { } seedModels)
             _availableModels = ExtractModelNames(seedModels);
+        // Fall back to last-known models so the composer shows a real model
+        // name while reconnecting instead of the generic "model" placeholder.
+        else if (_lastChatState?.AvailableModels is { Length: > 0 } cached)
+            _availableModels = cached;
 
         _bridge.StatusChanged += OnStatusChanged;
         _bridge.SessionsUpdated += OnSessionsUpdated;
@@ -801,13 +809,17 @@ public sealed class OpenClawChatDataProvider : IChatDataProvider
         if (_disposed) return ValueTask.CompletedTask;
         _disposed = true;
         System.Threading.Timer? timerToDispose;
+        System.Threading.Timer? chatStateTimerToDispose;
         lock (_gate)
         {
             timerToDispose = _toolMetaSaveTimer;
             _toolMetaSaveTimer = null;
             _toolMetaSaveVersion++;
+            chatStateTimerToDispose = _lastChatStateSaveTimer;
+            _lastChatStateSaveTimer = null;
         }
         timerToDispose?.Dispose();
+        chatStateTimerToDispose?.Dispose();
         SaveToolMetaCache();
         _bridge.StatusChanged -= OnStatusChanged;
         _bridge.SessionsUpdated -= OnSessionsUpdated;
@@ -2150,7 +2162,8 @@ public sealed class OpenClawChatDataProvider : IChatDataProvider
             threadList.Add(new ChatThread
             {
                 Id = ck,
-                Title = "Main session",
+                Title = _lastChatState?.ThreadTitle ?? "Main session",
+                Model = _lastChatState?.Model,
                 Status = ChatThreadStatus.Running,
                 Activity = ChatActivity.Idle,
             });
@@ -2285,9 +2298,86 @@ public sealed class OpenClawChatDataProvider : IChatDataProvider
         if (_post is null)
         {
             Changed?.Invoke(this, args);
-            return;
         }
-        _post(() => Changed?.Invoke(this, args));
+        else
+        {
+            _post(() => Changed?.Invoke(this, args));
+        }
+
+        // Debounce-save last-known UI state so the next launch can show
+        // meaningful labels while reconnecting instead of "Main session"/"model".
+        if (snapshot.Threads.Length > 0 || snapshot.AvailableModels.Length > 0)
+            DebounceSaveLastChatState(snapshot);
+    }
+
+    // ── Last-chat-state cache ──────────────────────────────────────────
+    // Persists the last-known thread title, model, and available models so
+    // the UI can show them while reconnecting instead of generic placeholders.
+
+    private static readonly string LastChatStateFilePath = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "OpenClawTray", "last-chat-state.json");
+
+    private System.Threading.Timer? _lastChatStateSaveTimer;
+
+    internal sealed class LastChatState
+    {
+        public string? DefaultThreadId { get; set; }
+        public string? ThreadTitle { get; set; }
+        public string? Model { get; set; }
+        public string[]? AvailableModels { get; set; }
+    }
+
+    private LastChatState? _lastChatState;
+
+    internal static LastChatState? LoadLastChatState()
+    {
+        try
+        {
+            if (!File.Exists(LastChatStateFilePath)) return null;
+            var json = File.ReadAllText(LastChatStateFilePath);
+            return System.Text.Json.JsonSerializer.Deserialize<LastChatState>(json);
+        }
+        catch { return null; }
+    }
+
+    private void DebounceSaveLastChatState(ChatDataSnapshot snapshot)
+    {
+        // Find the default thread to capture its title/model
+        var defaultThread = snapshot.DefaultThreadId is { } dtId
+            ? Array.Find(snapshot.Threads, t => t.Id == dtId)
+            : snapshot.Threads.Length > 0 ? snapshot.Threads[0] : null;
+
+        if (defaultThread is null && snapshot.AvailableModels.Length == 0) return;
+
+        var state = new LastChatState
+        {
+            DefaultThreadId = snapshot.DefaultThreadId,
+            ThreadTitle = defaultThread?.Title,
+            Model = defaultThread?.Model,
+            AvailableModels = snapshot.AvailableModels,
+        };
+
+        lock (_gate)
+        {
+            _lastChatState = state;
+            _lastChatStateSaveTimer?.Dispose();
+            _lastChatStateSaveTimer = new System.Threading.Timer(_ => SaveLastChatState(state), null, 2000, Timeout.Infinite);
+        }
+    }
+
+    private static void SaveLastChatState(LastChatState state)
+    {
+        try
+        {
+            var dir = Path.GetDirectoryName(LastChatStateFilePath);
+            if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
+            var json = System.Text.Json.JsonSerializer.Serialize(state);
+            var tmp = LastChatStateFilePath + ".tmp";
+            File.WriteAllText(tmp, json);
+            File.Move(tmp, LastChatStateFilePath, overwrite: true);
+        }
+        catch { }
     }
 
     private void RaiseNotification(ChatProviderNotification notification)

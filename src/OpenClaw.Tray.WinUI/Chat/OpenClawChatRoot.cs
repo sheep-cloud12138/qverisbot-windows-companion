@@ -243,10 +243,15 @@ public sealed class OpenClawChatRoot : Component
             && snapshot.ComposeTarget.IsReady
             && snapshot.ComposeTarget.SessionKey is { } composeKey)
         {
+            // Use last-known state from the data provider so the composer shows
+            // the previous session title/model while reconnecting instead of
+            // generic "Main session"/"model" placeholders.
+            var lastState = (_provider as OpenClawChatDataProvider)?.CachedLastChatState;
             composeOnlyThread = new ChatThread
             {
                 Id = composeKey,
-                Title = "Main session",
+                Title = lastState?.ThreadTitle ?? "Main session",
+                Model = lastState?.Model,
                 Status = ChatThreadStatus.Running,
                 Activity = ChatActivity.Idle,
             };
@@ -416,8 +421,11 @@ public sealed class OpenClawChatRoot : Component
                 var parts = (t.Id ?? "").Split(':');
                 return parts.Length >= 3 && parts[0] == "agent" ? parts[1] : "other";
             })
+            // "main" first (sort key 0), then alphabetical
+            .OrderBy(g => g.Key.Equals("main", StringComparison.OrdinalIgnoreCase) ? 0 : 1)
+            .ThenBy(g => g.Key, StringComparer.OrdinalIgnoreCase)
             .Select(g => new ChannelGroup(
-                AgentLabel: char.ToUpper(g.Key[0]) + g.Key[1..],
+                AgentLabel: g.Key.Length > 0 ? char.ToUpper(g.Key[0]) + g.Key[1..] : "Unknown",
                 Sessions: g.Select(t => (Id: t.Id, Title: t.Title!)).ToArray()))
             .ToArray();
 

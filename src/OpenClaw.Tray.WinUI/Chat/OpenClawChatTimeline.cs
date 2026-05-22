@@ -1041,7 +1041,7 @@ public class OpenClawChatTimeline : Component<OpenClawChatTimelineProps>
                     VStack(2, bubbleRow, footer)
                         .HAlign(HorizontalAlignment.Stretch)
                 ).Background(new SolidColorBrush(Colors.Transparent))
-                 .Margin(gutter, topMargin, 16, bottomMargin),
+                 .Margin(gutter, topMargin, 20, bottomMargin),
                 entry.Id);
         }
 
@@ -1061,12 +1061,15 @@ public class OpenClawChatTimeline : Component<OpenClawChatTimelineProps>
                 return Empty();
 
             // Avatar shown only on the FIRST entry of a contiguous agent-side
-            // run. Continuation entries get no spacer — they align flush with
-            // the tool burst cards above (which also sit at the left inset),
-            // so the agent column reads as a single vertical edge.
-            Element leftSlot = !showAssistAvatar || !showAvatar
-                ? Empty()
-                : AssistantAvatar().VAlign(VerticalAlignment.Top);
+            // run. Continuation entries get an invisible spacer the same width
+            // as the avatar so all bubbles stay left-aligned in a uniform column.
+            Element leftSlot;
+            if (!showAssistAvatar)
+                leftSlot = Empty();
+            else if (showAvatar)
+                leftSlot = AssistantAvatar().VAlign(VerticalAlignment.Top);
+            else
+                leftSlot = Border(Empty()).Set(b => { b.Width = 36; b.Height = 0; });
 
             // Assistant bubble — subtle gray with primary text. Radius/Padding
             // come from ChatExplorationState (BubbleCornerRadius + PaddingDensity).
@@ -1103,10 +1106,9 @@ public class OpenClawChatTimeline : Component<OpenClawChatTimelineProps>
             var bubbleRow = Grid(
                 [GridSize.Auto, GridSize.Star()],
                 [GridSize.Auto],
-                leftSlot.Grid(row: 0, column: 0).Margin(0, 0, showAssistAvatar && showAvatar ? bubbleSideMargin : 0, 0),
+                leftSlot.Grid(row: 0, column: 0).Margin(0, 0, showAssistAvatar ? bubbleSideMargin : 0, 0),
                 card.HAlign(HorizontalAlignment.Left).Grid(row: 0, column: 1)
             ).HAlign(HorizontalAlignment.Stretch);
-
             Element footer = Empty();
             if (endsBurst && showTimestamps)
             {
@@ -1117,7 +1119,7 @@ public class OpenClawChatTimeline : Component<OpenClawChatTimelineProps>
                     entryMeta?.InputTokens, entryMeta?.OutputTokens,
                     entryMeta?.ResponseTokens, entryMeta?.ContextPercent,
                     chatStampFg, entry.Id, entry.Text ?? "");
-                var leftInset = (showAssistAvatar && showAvatar) ? (36 + bubbleSideMargin) : 0;
+                var leftInset = showAssistAvatar ? (36 + bubbleSideMargin) : 0;
                 leftInset += (int)bubblePadding.Left;
                 footer = footer.Margin(leftInset, 2, 0, 0);
             }
@@ -1367,6 +1369,7 @@ public class OpenClawChatTimeline : Component<OpenClawChatTimelineProps>
                 {
                     var next = new HashSet<string>(expandedToolChips.Value);
                     if (!next.Add(token)) next.Remove(token);
+                    suppressAutoFollowRef.Current = true;
                     expandedToolChips.Set(next);
                 };
 
@@ -1619,7 +1622,12 @@ public class OpenClawChatTimeline : Component<OpenClawChatTimelineProps>
                 Action toggleSummary = () =>
                 {
                     var next = new HashSet<string>(expandedToolChips.Value);
-                    if (!next.Add(summaryToken)) next.Remove(summaryToken);
+                    var expanding = next.Add(summaryToken);
+                    if (!expanding) next.Remove(summaryToken);
+                    // Suppress auto-follow so the scroll position stays put
+                    // while the card unfurls — the SizeChanged handler would
+                    // otherwise chase the new bottom.
+                    suppressAutoFollowRef.Current = true;
                     expandedToolChips.Set(next);
                 };
 
@@ -1806,6 +1814,7 @@ public class OpenClawChatTimeline : Component<OpenClawChatTimelineProps>
                 {
                     var next = new HashSet<string>(expandedToolChips.Value);
                     if (!next.Add(taskListToken)) next.Remove(taskListToken);
+                    suppressAutoFollowRef.Current = true;
                     expandedToolChips.Set(next);
                 };
 
@@ -2305,6 +2314,11 @@ public class OpenClawChatTimeline : Component<OpenClawChatTimelineProps>
                                     if (!suppressAutoFollowRef.Current && isFollowingRef.Current)
                                     {
                                         QueueScrollToBottom(sv, prevSessionIdRef.Current, disableAnimation: true);
+                                    }
+                                    else if (suppressAutoFollowRef.Current)
+                                    {
+                                        // Reset after one suppressed layout pass (e.g. tool expand/collapse).
+                                        suppressAutoFollowRef.Current = false;
                                     }
                                 };
                             }
