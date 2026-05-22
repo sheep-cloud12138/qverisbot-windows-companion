@@ -753,7 +753,6 @@ public sealed partial class HubWindow : WindowEx
             // Actions
             new() { Icon = "💬", Title = "Open Chat Window", Subtitle = "Open standalone chat", Tag = "chat" },
             new() { Icon = "🌐", Title = "Open Dashboard", Subtitle = "Open web dashboard", Execute = () => ((IAppCommands)Application.Current).OpenDashboard(null) },
-            new() { Icon = "📤", Title = "Quick Send", Subtitle = "Send a quick message", Execute = () => QuickSendAction?.Invoke() },
         };
 
         // Toggle commands
@@ -824,9 +823,6 @@ public sealed partial class HubWindow : WindowEx
             NavigateTo(cmd.Tag);
         }
     }
-
-    /// <summary>Action to open the QuickSend dialog, set by App.xaml.cs.</summary>
-    public Action? QuickSendAction { get; set; }
 
     #region High Contrast icon fallback
 
