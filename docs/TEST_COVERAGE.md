@@ -11,10 +11,10 @@ These are the suites every agent must run after code changes, as documented in
 
 | Suite | Latest runtime result |
 |---|---:|
-| `OpenClaw.Shared.Tests` | 1,897 total: 1,869 passed, 28 skipped |
-| `OpenClaw.Tray.Tests` | 1,191 total: 1,191 passed, 0 skipped |
+| `OpenClaw.Shared.Tests` | 1,890 total: 1,862 passed, 28 skipped |
+| `OpenClaw.Tray.Tests` | 1,178 total: 1,178 passed, 0 skipped |
 
-Runtime totals come from `dotnet test` on 2026-05-21. They are higher than
+Runtime totals come from `dotnet test` on 2026-05-22. They are higher than
 method counts because some `[Theory]` tests expand into multiple cases.
 
 ## Test project inventory
