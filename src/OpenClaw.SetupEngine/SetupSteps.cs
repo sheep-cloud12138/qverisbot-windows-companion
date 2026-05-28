@@ -37,6 +37,10 @@ internal static class WslConstants
 internal static class WslInstallSupport
 {
     private static readonly Version s_minDirectNamedInstallVersion = new(2, 4, 4);
+    public const string UpdateUrl = "https://aka.ms/wslstorepage";
+
+    public static string UpdateInstructions
+        => $"Update WSL from the Microsoft Store page ({UpdateUrl}), then retry setup.";
 
     public static IReadOnlyList<string> ParseQuietDistroList(string output)
         => Normalize(output)
@@ -386,17 +390,17 @@ public sealed class PreflightWslStep : SetupStep
         if (versionResult.ExitCode != 0)
         {
             if (LooksTooOldForVersionCommand(versionResult))
-                return StepResult.Terminal("WSL is installed but too old for clean app-owned gateway setup. Update WSL from Microsoft Store or run `wsl --update`, then retry setup.");
+                return StepResult.Terminal($"WSL is installed but too old for clean app-owned gateway setup. {WslInstallSupport.UpdateInstructions}");
 
             return StepResult.Terminal($"WSL is not available. {FirstUsefulLine(versionResult)}");
         }
 
         var versionOutput = NormalizeWslOutput($"{versionResult.Stdout}\n{versionResult.Stderr}");
         if (!WslInstallSupport.TryParseWslVersion(versionOutput, out var wslVersion))
-            return StepResult.Terminal("WSL version output did not include a parseable WSL version. Update WSL from Microsoft Store or run `wsl --update`, then retry setup.");
+            return StepResult.Terminal($"WSL version output did not include a parseable WSL version. {WslInstallSupport.UpdateInstructions}");
 
         if (!WslInstallSupport.SupportsDirectNamedInstall(wslVersion))
-            return StepResult.Terminal($"WSL {wslVersion} cannot create a clean app-owned OpenClaw gateway distro. Update WSL with `wsl --update`, then retry setup.");
+            return StepResult.Terminal($"WSL {wslVersion} cannot create a clean app-owned OpenClaw gateway distro. {WslInstallSupport.UpdateInstructions}");
 
         ctx.Logger.Info($"WSL version output: {NormalizeWslOutput(versionResult.Stdout).Trim()}");
         ctx.Logger.Info($"WSL direct named install is supported (version {wslVersion})");
@@ -641,39 +645,79 @@ public sealed class CreateWslInstanceStep : SetupStep
     private static async Task<string> CleanupPartialInstall(SetupContext ctx, string distro, string installPath, CancellationToken ct)
     {
         var cleanupErrors = new List<string>();
+        var installPathExists = Directory.Exists(installPath) || File.Exists(installPath);
         var list = await ctx.Commands.RunAsync(WslConstants.WslExePath, ["--list", "--quiet"], TimeSpan.FromSeconds(15), ct: ct);
-        var distroExists = list.ExitCode == 0 && WslInstallSupport.ContainsDistro(list.Stdout, distro);
+        var registrationStateKnown = list.ExitCode == 0;
+        var distroExists = registrationStateKnown && WslInstallSupport.ContainsDistro(list.Stdout, distro);
+        var canDeleteInstallPath = registrationStateKnown && !distroExists;
 
-        if (!distroExists && !Directory.Exists(installPath) && !File.Exists(installPath))
-            return "";
-
-        if (distroExists)
+        if (!registrationStateKnown)
         {
-            var terminate = await ctx.Commands.RunAsync(WslConstants.WslExePath, ["--terminate", distro], TimeSpan.FromSeconds(30), ct: ct);
-            if (terminate.ExitCode != 0)
-                cleanupErrors.Add($"terminate exit {terminate.ExitCode}: {FirstNonEmpty(terminate.Stderr, terminate.Stdout)}");
-
-            var unregister = await ctx.Commands.RunAsync(WslConstants.WslExePath, ["--unregister", distro], TimeSpan.FromSeconds(60), ct: ct);
-            if (unregister.ExitCode != 0)
-            {
-                ctx.Logger.Warn($"Partial install unregister failed (exit {unregister.ExitCode}); forcing WSL shutdown and retrying");
-                var shutdown = await ctx.Commands.RunAsync(WslConstants.WslExePath, ["--shutdown"], TimeSpan.FromSeconds(30), ct: ct);
-                if (shutdown.ExitCode != 0)
-                    cleanupErrors.Add($"shutdown exit {shutdown.ExitCode}: {FirstNonEmpty(shutdown.Stderr, shutdown.Stdout)}");
-
-                unregister = await ctx.Commands.RunAsync(WslConstants.WslExePath, ["--unregister", distro], TimeSpan.FromSeconds(60), ct: ct);
-                if (unregister.ExitCode != 0)
-                    cleanupErrors.Add($"unregister exit {unregister.ExitCode}: {FirstNonEmpty(unregister.Stderr, unregister.Stdout)}");
-            }
+            ctx.Logger.Warn($"Partial install cleanup could not list WSL distros (exit {list.ExitCode}); attempting best-effort unregister for '{distro}' before deleting app-owned files");
+            canDeleteInstallPath = await TryUnregisterPartialInstall(ctx, distro, cleanupErrors, ct);
+        }
+        else if (distroExists)
+        {
+            canDeleteInstallPath = await TryUnregisterPartialInstall(ctx, distro, cleanupErrors, ct);
         }
 
-        var delete = await CleanupStaleDistroStep.DeleteDistroDirectoryWithRetries(ctx, installPath, ct);
-        if (!delete.IsSuccess)
-            cleanupErrors.Add(delete.Message ?? "install directory cleanup failed");
+        if (!canDeleteInstallPath)
+        {
+            if (!registrationStateKnown)
+            {
+                cleanupErrors.Insert(0,
+                    $"could not confirm whether distro '{distro}' is still registered: {FirstNonEmpty(list.Stderr, list.Stdout)}");
+            }
+
+            if (installPathExists)
+            {
+                cleanupErrors.Add(
+                    $"skipped deleting app-owned install path '{installPath}' until distro '{distro}' is confirmed unregistered");
+            }
+        }
+        else if (installPathExists)
+        {
+            var delete = await CleanupStaleDistroStep.DeleteDistroDirectoryWithRetries(ctx, installPath, ct);
+            if (!delete.IsSuccess)
+                cleanupErrors.Add(delete.Message ?? "install directory cleanup failed");
+        }
 
         return cleanupErrors.Count == 0
             ? ""
             : $" Partial app-owned distro cleanup also failed: {string.Join("; ", cleanupErrors)}";
+    }
+
+    private static async Task<bool> TryUnregisterPartialInstall(SetupContext ctx, string distro, List<string> cleanupErrors, CancellationToken ct)
+    {
+        var terminate = await ctx.Commands.RunAsync(WslConstants.WslExePath, ["--terminate", distro], TimeSpan.FromSeconds(30), ct: ct);
+        if (terminate.ExitCode != 0 && !IsMissingDistroResult(terminate))
+            cleanupErrors.Add($"terminate exit {terminate.ExitCode}: {FirstNonEmpty(terminate.Stderr, terminate.Stdout)}");
+
+        var unregister = await ctx.Commands.RunAsync(WslConstants.WslExePath, ["--unregister", distro], TimeSpan.FromSeconds(60), ct: ct);
+        if (unregister.ExitCode == 0 || IsMissingDistroResult(unregister))
+            return true;
+
+        ctx.Logger.Warn($"Partial install unregister failed (exit {unregister.ExitCode}); forcing WSL shutdown and retrying");
+        var shutdown = await ctx.Commands.RunAsync(WslConstants.WslExePath, ["--shutdown"], TimeSpan.FromSeconds(30), ct: ct);
+        if (shutdown.ExitCode != 0)
+            cleanupErrors.Add($"shutdown exit {shutdown.ExitCode}: {FirstNonEmpty(shutdown.Stderr, shutdown.Stdout)}");
+
+        unregister = await ctx.Commands.RunAsync(WslConstants.WslExePath, ["--unregister", distro], TimeSpan.FromSeconds(60), ct: ct);
+        if (unregister.ExitCode == 0 || IsMissingDistroResult(unregister))
+            return true;
+
+        cleanupErrors.Add($"unregister exit {unregister.ExitCode}: {FirstNonEmpty(unregister.Stderr, unregister.Stdout)}");
+        return false;
+    }
+
+    private static bool IsMissingDistroResult(CommandResult result)
+    {
+        if (result.ExitCode == 0)
+            return false;
+
+        var output = FirstNonEmpty(result.Stderr, result.Stdout);
+        return output.Contains("There is no distribution with the supplied name", StringComparison.OrdinalIgnoreCase) ||
+               output.Contains("WSL_E_DISTRO_NOT_FOUND", StringComparison.OrdinalIgnoreCase);
     }
 
     private static string FirstNonEmpty(params string[] values)
