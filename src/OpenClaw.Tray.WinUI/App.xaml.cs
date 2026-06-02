@@ -199,19 +199,10 @@ public partial class App : Application, OpenClawTray.Services.IAppCommands
             "OpenClawTray");
     private readonly AppCrashLogger _crashLogger = new(Path.Combine(DataPath, "crash.log"));
     private static readonly AppRunMarker s_runMarker = new(Path.Combine(DataPath, "run.marker"));
-    private const string DisableMouseInPointerEnv = "OPENCLAW_DISABLE_MOUSE_IN_POINTER";
-
-    [DllImport("user32.dll", SetLastError = true)]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool EnableMouseInPointer([MarshalAs(UnmanagedType.Bool)] bool fEnable);
-
-    [DllImport("user32.dll")]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool IsMouseInPointerEnabled();
 
     public App()
     {
-        ConfigureMouseInPointerInput();
+        StartupInputConfigurator.Configure();
 
         // Language override for localization testing (e.g., OPENCLAW_LANGUAGE=zh-CN)
         var langOverride = Environment.GetEnvironmentVariable("OPENCLAW_LANGUAGE");
@@ -236,56 +227,6 @@ public partial class App : Application, OpenClawTray.Services.IAppCommands
         TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
         AppDomain.CurrentDomain.ProcessExit += OnProcessExit;
     }
-
-    private static void ConfigureMouseInPointerInput()
-    {
-        if (IsTruthyEnvVar(Environment.GetEnvironmentVariable(DisableMouseInPointerEnv)))
-        {
-            Logger.Warn($"[Input] Mouse-in-pointer startup configuration disabled by {DisableMouseInPointerEnv}=1.");
-            return;
-        }
-
-        try
-        {
-            var before = IsMouseInPointerEnabled();
-            if (before)
-            {
-                Logger.Info("[Input] Mouse-in-pointer was already enabled before WinUI initialization.");
-                return;
-            }
-
-            var enabled = EnableMouseInPointer(true);
-            var error = enabled ? 0 : Marshal.GetLastWin32Error();
-            var after = IsMouseInPointerEnabled();
-            if (enabled && after)
-            {
-                Logger.Info("[Input] Enabled mouse-in-pointer before WinUI initialization for precision touchpad scrolling.");
-            }
-            else
-            {
-                Logger.Warn($"[Input] EnableMouseInPointer(true) did not enable mouse-in-pointer. Before={before}, After={after}, LastError={error}.");
-            }
-        }
-        catch (DllNotFoundException ex)
-        {
-            Logger.Warn($"[Input] EnableMouseInPointer startup configuration failed: {ex.Message}");
-        }
-        catch (EntryPointNotFoundException ex)
-        {
-            Logger.Warn($"[Input] EnableMouseInPointer startup configuration failed: {ex.Message}");
-        }
-        catch (SEHException ex)
-        {
-            Logger.Warn($"[Input] EnableMouseInPointer startup configuration failed: {ex.Message}");
-        }
-    }
-
-    private static bool IsTruthyEnvVar(string? value) =>
-        value is not null &&
-        (string.Equals(value, "1", StringComparison.OrdinalIgnoreCase) ||
-         string.Equals(value, "true", StringComparison.OrdinalIgnoreCase) ||
-         string.Equals(value, "yes", StringComparison.OrdinalIgnoreCase) ||
-         string.Equals(value, "on", StringComparison.OrdinalIgnoreCase));
 
     private void OnUnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
     {
