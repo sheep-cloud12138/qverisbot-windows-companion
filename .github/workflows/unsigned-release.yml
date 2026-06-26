@@ -32,7 +32,7 @@ jobs:
             vc_redist_name: vc_redist.arm64.exe
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -142,7 +142,7 @@ jobs:
       contents: write
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Resolve release version and tag
         id: version
