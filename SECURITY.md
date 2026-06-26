@@ -1,21 +1,21 @@
 # Security Policy
 
-If you believe you have found a security issue in OpenClaw Windows, report it privately first.
+If you believe you have found a security issue in QVerisBot Windows Companion, report it privately first.
 
 Do not open a public issue or pull request that discloses an unpatched vulnerability, exploit path, secret, or security-sensitive proof of concept.
 
 ## Reporting
 
-For vulnerabilities in this repository, submit a private GitHub Security Advisory for [openclaw/openclaw-windows-node](https://github.com/openclaw/openclaw-windows-node/security/advisories/new) when available.
+For vulnerabilities in this repository, submit a private GitHub Security Advisory for [QVerisAI/qverisbot-windows-companion](https://github.com/QVerisAI/qverisbot-windows-companion/security/advisories/new) when available.
 
-If the issue does not fit this repository or you are unsure where it belongs, email [security@openclaw.ai](mailto:security@openclaw.ai) and we will route it.
+If the issue does not fit this repository or you are unsure where it belongs, route it through the QVerisAI security contact for this project.
 
 Useful reports include:
 
 - affected version or commit SHA,
 - impacted component or file path,
 - reproduction steps or a proof of concept against latest `master`,
-- actual impact and the OpenClaw trust boundary crossed,
+- actual impact and the QVerisBot/OpenClaw trust boundary crossed,
 - Windows version and architecture,
 - suggested remediation when practical.
 
@@ -36,7 +36,7 @@ Security-relevant surfaces in this repository include:
 The following are usually out of scope for this repository:
 
 - issues in OpenClaw core, bundled plugins, channels, or gateway behavior that must be fixed in [openclaw/openclaw](https://github.com/openclaw/openclaw),
-- vulnerabilities in upstream Windows, .NET, WinUI, PowerToys, or third-party packages without reachable impact through OpenClaw Windows,
+- vulnerabilities in upstream Windows, .NET, WinUI, PowerToys, or third-party packages without reachable impact through QVerisBot Windows Companion,
 - prompt injection by itself, unless it demonstrates a concrete auth, approval, sandbox, command-policy, or local-boundary bypass,
 - reports that require prior write access to trusted local state such as `%APPDATA%\OpenClawTray`, `%LOCALAPPDATA%\OpenClawTray`, project files, shell profile files, or installed binaries,
 - insecure local machine administration or multi-user host setups where the OS trust boundary is already lost,

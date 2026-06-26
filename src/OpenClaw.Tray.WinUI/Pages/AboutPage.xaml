@@ -17,7 +17,7 @@
                 <StackPanel Orientation="Horizontal" Spacing="16">
                     <TextBlock Text="🦞" FontSize="48" VerticalAlignment="Center"/>
                     <StackPanel Spacing="4" VerticalAlignment="Center">
-                        <TextBlock x:Uid="AboutPage_TextBlock_19" Text="OpenClaw Hub" Style="{StaticResource SubtitleTextBlockStyle}"/>
+                        <TextBlock x:Uid="AboutPage_TextBlock_19" Text="QVerisBot Companion" Style="{StaticResource SubtitleTextBlockStyle}"/>
                         <TextBlock x:Name="VersionText"
                                    Style="{StaticResource CaptionTextBlockStyle}"
                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
@@ -94,9 +94,9 @@
                     BorderThickness="1" CornerRadius="8" Padding="16">
                 <StackPanel Spacing="8">
                     <TextBlock x:Uid="AboutPage_TextBlock_91" Text="Links" Style="{StaticResource BodyStrongTextBlockStyle}"/>
-                    <HyperlinkButton x:Uid="AboutPage_HyperlinkButton_92" Content="Documentation → openclaw.ai/docs"
+                    <HyperlinkButton x:Uid="AboutPage_HyperlinkButton_92" Content="Documentation → qveris.ai"
                                      Click="OnDocumentationClick"/>
-                    <HyperlinkButton x:Uid="AboutPage_HyperlinkButton_94" Content="GitHub → github.com/openclaw/openclaw-windows-node"
+                    <HyperlinkButton x:Uid="AboutPage_HyperlinkButton_94" Content="GitHub → github.com/QVerisAI/qverisbot-windows-companion"
                                      Click="OnGitHubClick"/>
                     <HyperlinkButton x:Uid="AboutPage_HyperlinkButton_96" Content="Dashboard → openclaw://dashboard"
                                      Click="OnDashboardClick"/>

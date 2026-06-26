@@ -525,7 +525,7 @@ jobs:
 
   release:
     needs: [repo-hygiene, test, e2etests, build]
-    if: startsWith(github.ref, 'refs/tags/v') && needs.repo-hygiene.result == 'success' && needs.test.result == 'success' && needs.e2etests.result == 'success' && needs.build.result == 'success' && !cancelled()
+    if: false # QVerisBot first-stage releases use unsigned-release.yml; upstream signing is intentionally disabled.
     runs-on: windows-latest
     environment: release-signing
     permissions:

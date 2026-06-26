@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Build local OpenClaw Companion Inno installers for quick validation.
+    Build local QVerisBot Companion Inno installers for quick validation.
 
 .DESCRIPTION
     Publishes the tray app and SetupEngine.UI into a production-style layout,
@@ -213,7 +213,7 @@ foreach ($architecture in $architectures) {
 }
 
 Write-Step "Built installers"
-Get-ChildItem -Path (Join-Path $repoRoot "Output\OpenClawCompanion-Setup-*.exe") |
+Get-ChildItem -Path (Join-Path $repoRoot "Output\QVerisBot-Setup-*.exe") |
     Sort-Object Name |
     ForEach-Object {
         "{0}`t{1:N2} MB`t{2}" -f $_.FullName, ($_.Length / 1MB), $_.LastWriteTime

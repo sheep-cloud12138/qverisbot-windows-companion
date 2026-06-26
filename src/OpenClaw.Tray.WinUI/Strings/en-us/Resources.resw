@@ -313,13 +313,13 @@
     <value>Notification History — OpenClaw Tray</value>
   </data>
   <data name="WindowTitle_WebChat" xml:space="preserve">
-    <value>OpenClaw Chat</value>
+    <value>QVerisBot Chat</value>
   </data>
   <data name="WindowTitle_Welcome" xml:space="preserve">
     <value>Welcome to OpenClaw</value>
   </data>
   <data name="WindowTitle_Update" xml:space="preserve">
-    <value>OpenClaw Update</value>
+    <value>QVerisBot Update</value>
   </data>
   <!-- Settings runtime status -->
   <data name="Status_Testing" xml:space="preserve">
@@ -1498,7 +1498,7 @@ On your gateway host (Mac/Linux), run:
     <value>About</value>
   </data>
   <data name="AboutPage_TextBlock_19.Text" xml:space="preserve">
-    <value>OpenClaw Hub</value>
+    <value>QVerisBot Companion</value>
   </data>
   <data name="AboutPage_TextBlock_23.Text" xml:space="preserve">
     <value>.NET 10 / WinUI 3 / WinAppSDK 1.8</value>
@@ -1537,10 +1537,10 @@ On your gateway host (Mac/Linux), run:
     <value>Links</value>
   </data>
   <data name="AboutPage_HyperlinkButton_92.Content" xml:space="preserve">
-    <value>Documentation → openclaw.ai/docs</value>
+    <value>Documentation → qveris.ai</value>
   </data>
   <data name="AboutPage_HyperlinkButton_94.Content" xml:space="preserve">
-    <value>GitHub → github.com/openclaw/openclaw-windows-node</value>
+    <value>GitHub → github.com/QVerisAI/qverisbot-windows-companion</value>
   </data>
   <data name="AboutPage_HyperlinkButton_96.Content" xml:space="preserve">
     <value>Dashboard → openclaw://dashboard</value>
@@ -2275,7 +2275,7 @@ On your gateway host (Mac/Linux), run:
     <value>Connect to gateway to start chatting</value>
   </data>
   <data name="TitleText.Text" xml:space="preserve">
-    <value>OpenClaw Windows Companion</value>
+    <value>QVerisBot Companion</value>
   </data>
   <data name="NavPaneToggleButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>Toggle navigation pane</value>
@@ -2479,13 +2479,13 @@ On your gateway host (Mac/Linux), run:
     <value>Workspace files</value>
   </data>
   <data name="ChatWindow_winexWindowEx_2.Title" xml:space="preserve">
-    <value>OpenClaw Chat</value>
+    <value>QVerisBot Chat</value>
   </data>
   <data name="SearchBox.PlaceholderText" xml:space="preserve">
     <value>Type a command...</value>
   </data>
   <data name="HubWindow_winexWindowEx_2.Title" xml:space="preserve">
-    <value>OpenClaw</value>
+    <value>QVerisBot Companion</value>
   </data>
   <data name="TitleSearchBox.PlaceholderText" xml:space="preserve">
     <value>Search… (Ctrl+E)</value>
@@ -2503,7 +2503,7 @@ On your gateway host (Mac/Linux), run:
     <value>Reload Canvas</value>
   </data>
   <data name="TrayMenuWindow_winexWindowEx_2.Title" xml:space="preserve">
-    <value>OpenClaw Menu</value>
+    <value>QVerisBot Menu</value>
   </data>
   <data name="UsagePage_TextBlock_10.Text" xml:space="preserve">
     <value>Usage &amp; Cost</value>

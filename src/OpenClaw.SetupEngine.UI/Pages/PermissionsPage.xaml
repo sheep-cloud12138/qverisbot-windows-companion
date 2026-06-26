@@ -15,7 +15,7 @@
             <TextBlock TextWrapping="Wrap" TextAlignment="Center"
                        FontSize="14" Opacity="0.7" MaxWidth="480"
                        HorizontalAlignment="Center"
-                       Text="OpenClaw works best when it can send notifications, access your camera and microphone, capture your screen, and know your location. Grant permissions below." />
+                       Text="QVerisBot works best when it can send notifications, access your camera and microphone, capture your screen, and know your location. Grant permissions below." />
         </StackPanel>
 
         <!-- Permission rows -->

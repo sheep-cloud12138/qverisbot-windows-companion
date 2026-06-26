@@ -34,7 +34,7 @@ public sealed partial class WelcomePage : Page
             ? Color.FromArgb(255, 0x2C, 0x2C, 0x2C)
             : Color.FromArgb(255, 0xF0, 0xF0, 0xF0));
 
-        InfoText.Text = "This local setup installs a small WSL Linux instance dedicated to OpenClaw. "
+        InfoText.Text = "This local setup installs a small WSL Linux instance dedicated to QVerisBot. "
                       + "If you'd rather connect to an existing or remote gateway, choose Advanced setup.";
 
         StartLobsterBreatheAnimation();

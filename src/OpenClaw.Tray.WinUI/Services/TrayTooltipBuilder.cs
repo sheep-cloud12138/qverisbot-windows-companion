@@ -36,7 +36,7 @@ internal sealed class TrayTooltipBuilder
         if (_snapshot.AuthFailureMessage != null) warningCount++;
         if (_snapshot.Channels.Length == 0 && _snapshot.Status == ConnectionStatus.Connected) warningCount++;
 
-        var tooltip = $"OpenClaw Tray - {_snapshot.Status}; " +
+        var tooltip = $"QVerisBot Companion - {_snapshot.Status}; " +
             $"{topology.DisplayName}; " +
             $"Channels {channelReady}/{_snapshot.Channels.Length}; " +
             $"Nodes {nodeOnline}/{nodeTotal}; " +
@@ -45,7 +45,7 @@ internal sealed class TrayTooltipBuilder
 
         if (_snapshot.CurrentActivity != null && !string.IsNullOrEmpty(_snapshot.CurrentActivity.DisplayText))
         {
-            tooltip = $"OpenClaw Tray - {_snapshot.CurrentActivity.DisplayText}; {_snapshot.Status}";
+            tooltip = $"QVerisBot Companion - {_snapshot.CurrentActivity.DisplayText}; {_snapshot.Status}";
         }
 
         return TrayTooltipFormatter.FitShellTooltip(tooltip);

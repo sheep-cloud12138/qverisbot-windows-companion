@@ -38,8 +38,8 @@ public sealed class InstallerIssAssertionTests
         var iss = File.ReadAllText(Path.Combine(GetRepositoryRoot(), "installer.iss"));
         Assert.Contains("AppMutex=OpenClawTray", iss);
         Assert.Contains("Inno requires \"{{\" to emit a literal opening brace in AppId.", iss);
-        Assert.Contains("AppId={{M0LTB0T-TRAY-4PP1-D3N7}", iss);
-        Assert.DoesNotContain("AppId={{M0LTB0T-TRAY-4PP1-D3N7}}", iss);
+        Assert.Contains("AppId={{64E21215-9C43-4F57-A003-C325789022B5}", iss);
+        Assert.DoesNotContain("AppId={{64E21215-9C43-4F57-A003-C325789022B5}}", iss);
 
         // The matching tray-side mutex name must be present in App.xaml.cs.
         var appXamlCs = File.ReadAllText(Path.Combine(
@@ -63,14 +63,14 @@ public sealed class InstallerIssAssertionTests
     {
         var iss = File.ReadAllText(Path.Combine(GetRepositoryRoot(), "installer.iss"));
 
-        Assert.Contains(@"#define MyAppName ""OpenClaw Companion""", iss);
+        Assert.Contains(@"#define MyAppName ""QVerisBot Companion""", iss);
         Assert.Contains(@"#define MyCompression ""lzma""", iss);
         Assert.Contains(@"#define MySolidCompression ""yes""", iss);
-        Assert.Contains("OutputBaseFilename=OpenClawCompanion-Setup-{#MyAppArch}", iss);
+        Assert.Contains("OutputBaseFilename=QVerisBot-Setup-{#MyAppArch}", iss);
         Assert.Contains(@"Name: ""{group}\{#MyAppName}""; Filename: ""{app}\{#MyAppExeName}""", iss);
-        Assert.Contains(@"Name: ""{group}\OpenClaw Gateway Setup""; Filename: ""{app}\SetupEngine\OpenClaw.SetupEngine.UI.exe""", iss);
-        Assert.Contains(@"Name: ""{group}\OpenClaw Companion Settings""; Filename: ""{app}\{#MyAppExeName}""; Parameters: ""openclaw://commandcenter""", iss);
-        Assert.Contains(@"Name: ""{group}\OpenClaw Chat""; Filename: ""{app}\{#MyAppExeName}""; Parameters: ""openclaw://chat""", iss);
+        Assert.Contains(@"Name: ""{group}\QVerisBot Gateway Setup""; Filename: ""{app}\SetupEngine\OpenClaw.SetupEngine.UI.exe""", iss);
+        Assert.Contains(@"Name: ""{group}\QVerisBot Companion Settings""; Filename: ""{app}\{#MyAppExeName}""; Parameters: ""openclaw://commandcenter""", iss);
+        Assert.Contains(@"Name: ""{group}\QVerisBot Chat""; Filename: ""{app}\{#MyAppExeName}""; Parameters: ""openclaw://chat""", iss);
         Assert.Contains(@"Name: ""{group}\Check for Updates""; Filename: ""{app}\{#MyAppExeName}""; Parameters: ""openclaw://check-updates""", iss);
     }
 

@@ -31,7 +31,7 @@
                        HorizontalAlignment="Center" />
 
             <!-- Subtitle -->
-            <TextBlock x:Name="SubtitleText" Text="OpenClaw is ready to go"
+            <TextBlock x:Name="SubtitleText" Text="QVerisBot is ready to go"
                        FontSize="14" Opacity="0.6"
                        HorizontalAlignment="Center" />
 
@@ -69,7 +69,7 @@
 
             <!-- Launch at startup toggle -->
             <Grid x:Name="StartupRow" ColumnDefinitions="*,Auto" Margin="0,24,0,0">
-                <TextBlock Text="Launch OpenClaw at startup?" FontSize="14"
+                <TextBlock Text="Launch QVerisBot at startup?" FontSize="14"
                            VerticalAlignment="Center" Grid.Column="0" />
                 <ToggleSwitch x:Name="StartupToggle" Grid.Column="1"
                               OnContent="On" OffContent="Off" />

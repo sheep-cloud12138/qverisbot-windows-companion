@@ -31,7 +31,7 @@ public sealed partial class CompletePage : Page
                 SuccessIcon.Visibility = Visibility.Visible;
                 FailureIcon.Visibility = Visibility.Collapsed;
                 TitleText.Text = "All set!";
-                SubtitleText.Text = "OpenClaw is ready to go";
+                SubtitleText.Text = "QVerisBot is ready to go";
                 ErrorCard.Visibility = Visibility.Collapsed;
                 HelpLink.Visibility = Visibility.Collapsed;
             }

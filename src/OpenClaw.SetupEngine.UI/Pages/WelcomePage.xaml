@@ -13,13 +13,13 @@
                    Source="ms-appx:///Assets/Setup/Lobster.png"
                    Width="170" Height="170"
                    HorizontalAlignment="Center" />
-            <TextBlock Text="Get started with OpenClaw"
+            <TextBlock Text="Get started with QVerisBot"
                        FontSize="28" FontWeight="SemiBold"
                        HorizontalAlignment="Center" />
             <TextBlock TextWrapping="Wrap" TextAlignment="Center"
                        FontSize="14" Opacity="0.7" MaxWidth="440"
                        HorizontalAlignment="Center"
-                       Text="OpenClaw lets agents run commands, read and write files, and capture screenshots on this PC. Only set it up on a computer you trust." />
+                       Text="QVerisBot lets agents run commands, read and write files, and capture screenshots on this PC. Only set it up on a computer you trust." />
         </StackPanel>
 
         <!-- Bottom: Info card + Button + Link (pushed to bottom) -->
@@ -41,7 +41,7 @@
 
             <!-- Start button -->
             <Button x:Name="StartButton"
-                    Content="Install new WSL Gateway"
+                    Content="Install new WSL gateway"
                     HorizontalAlignment="Stretch"
                     Height="44" FontSize="15" FontWeight="SemiBold"
                     Click="StartButton_Click">

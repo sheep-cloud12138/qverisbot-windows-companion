@@ -1,8 +1,8 @@
 {
-  "name": "openclaw-windows-node-mxc",
+  "name": "qverisbot-windows-companion-mxc",
   "version": "0.0.0",
   "private": true,
-  "description": "MXC sandbox dependency used by the OpenClaw tray build to copy wxc-exec.exe into the app output.",
+  "description": "MXC sandbox dependency used by the QVerisBot Windows companion build to copy wxc-exec.exe into the app output.",
   "dependencies": {
     "@microsoft/mxc-sdk": "^0.1.8"
   }

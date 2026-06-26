@@ -249,6 +249,80 @@ public class SetupStepsTests : IDisposable
     }
 
     [Fact]
+    public async Task InstallCli_PrefersQVerisBotAndCreatesOpenClawAlias()
+    {
+        var commands = new FakeCommandRunner(
+            _ => Ok(),
+            (_, command, _) =>
+            {
+                if (command.StartsWith("curl -fsSL", StringComparison.Ordinal))
+                    return Ok();
+                if (command == "qverisbot --version")
+                    return Ok("QVerisBot 0.1.0\n");
+                if (command == "command -v qverisbot")
+                    return Ok("/usr/bin/qverisbot\n");
+                if (command.Contains("QVERISBOT_CLI_PATH_READY", StringComparison.Ordinal))
+                    return Ok("QVERISBOT_CLI_PATH_READY\n");
+                if (command.Contains("qverisbot --version ||", StringComparison.Ordinal))
+                    return Ok("QVerisBot 0.1.0\n");
+
+                return Fail($"unexpected command: {command}");
+            });
+        var ctx = CreateContext(commands: commands);
+        ctx.DistroName = "OpenClawGateway";
+
+        var result = await new InstallCliStep().ExecuteAsync(ctx, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Contains(commands.WslCalls, call => call.Command == "qverisbot --version");
+        Assert.DoesNotContain(commands.WslCalls, call => call.Command == "openclaw --version");
+
+        var linkCommand = Assert.Single(commands.WslCalls, call =>
+            call.Command.Contains("QVERISBOT_CLI_PATH_READY", StringComparison.Ordinal)).Command;
+        Assert.Contains("ln -s '/usr/bin/qverisbot' '/usr/local/bin/qverisbot'", linkCommand);
+        Assert.Contains("ln -s '/usr/bin/qverisbot' '/usr/local/bin/openclaw'", linkCommand);
+    }
+
+    [Fact]
+    public async Task InstallCli_FallsBackToOpenClawAndCreatesQVerisBotAlias()
+    {
+        var commands = new FakeCommandRunner(
+            _ => Ok(),
+            (_, command, _) =>
+            {
+                if (command.StartsWith("curl -fsSL", StringComparison.Ordinal))
+                    return Ok();
+                if (command.Contains("qverisbot --version ||", StringComparison.Ordinal))
+                    return Ok("OpenClaw 2026.6.10\n");
+                if (command.Contains("qverisbot --version", StringComparison.Ordinal))
+                    return Fail("qverisbot not found");
+                if (command == "openclaw --version")
+                    return Ok("OpenClaw 2026.6.10\n");
+                if (command == "command -v openclaw")
+                    return Ok("/opt/openclaw/bin/openclaw\n");
+                if (command.Contains("QVERISBOT_CLI_PATH_READY", StringComparison.Ordinal))
+                    return Ok("QVERISBOT_CLI_PATH_READY\n");
+
+                return Fail($"unexpected command: {command}");
+            });
+        var ctx = CreateContext(commands: commands);
+        ctx.DistroName = "OpenClawGateway";
+
+        var result = await new InstallCliStep().ExecuteAsync(ctx, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        var qverisbotProbe = commands.WslCalls.FindIndex(call => call.Command == "qverisbot --version");
+        var openClawProbe = commands.WslCalls.FindIndex(call => call.Command == "openclaw --version");
+        Assert.True(qverisbotProbe >= 0);
+        Assert.True(openClawProbe > qverisbotProbe);
+
+        var linkCommand = Assert.Single(commands.WslCalls, call =>
+            call.Command.Contains("QVERISBOT_CLI_PATH_READY", StringComparison.Ordinal)).Command;
+        Assert.Contains("ln -s '/opt/openclaw/bin/openclaw' '/usr/local/bin/openclaw'", linkCommand);
+        Assert.Contains("ln -s '/opt/openclaw/bin/openclaw' '/usr/local/bin/qverisbot'", linkCommand);
+    }
+
+    [Fact]
     public async Task PreflightWsl_FailsForUnsupportedDirectInstallVersion()
     {
         var commands = new FakeCommandRunner(args =>

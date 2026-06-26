@@ -29,7 +29,7 @@ public sealed partial class ProgressPage : Page
         ("port", "Checking gateway port", ["preflight-port"]),
         ("wsl-create", "Installing clean WSL gateway", ["wsl-create"]),
         ("wsl-configure", "Configuring instance", ["wsl-configure", "validate-wsl-lockdown"]),
-        ("install-cli", "Installing OpenClaw", ["install-cli"]),
+        ("install-cli", "Installing QVerisBot CLI", ["install-cli"]),
         ("configure", "Preparing gateway", ["configure-gateway", "install-service"]),
         ("start", "Starting gateway", ["start-gateway", "mint-token"]),
         ("pairing", "Pairing device", ["pair-operator", "pair-node", "verify-e2e"]),

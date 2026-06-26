@@ -1,7 +1,7 @@
-; OpenClaw Companion Inno Setup Script (WinUI version)
-#define MyAppName "OpenClaw Companion"
-#define MyAppPublisher "Scott Hanselman"
-#define MyAppURL "https://github.com/openclaw/openclaw-windows-node"
+; QVerisBot Companion Inno Setup Script (WinUI version)
+#define MyAppName "QVerisBot Companion"
+#define MyAppPublisher "QVerisAI"
+#define MyAppURL "https://github.com/QVerisAI/qverisbot-windows-companion"
 #define MyAppExeName "OpenClaw.Tray.WinUI.exe"
 
 ; MyAppArch should be passed via /DMyAppArch=x64 or /DMyAppArch=arm64
@@ -20,17 +20,17 @@
 [Setup]
 ; Inno requires "{{" to emit a literal opening brace in AppId.
 ; Do not add a second closing brace here; that creates a malformed uninstall registry key.
-AppId={{M0LTB0T-TRAY-4PP1-D3N7}
+AppId={{64E21215-9C43-4F57-A003-C325789022B5}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
-AppSupportURL=https://github.com/openclaw/openclaw-windows-node/issues
-AppUpdatesURL=https://github.com/openclaw/openclaw-windows-node/releases
-DefaultDirName={localappdata}\OpenClawTray
+AppSupportURL=https://github.com/QVerisAI/qverisbot-windows-companion/issues
+AppUpdatesURL=https://github.com/QVerisAI/qverisbot-windows-companion/releases
+DefaultDirName={localappdata}\QVerisBotCompanion
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
-OutputBaseFilename=OpenClawCompanion-Setup-{#MyAppArch}
+OutputBaseFilename=QVerisBot-Setup-{#MyAppArch}
 Compression={#MyCompression}
 SolidCompression={#MySolidCompression}
 WizardStyle=modern
@@ -70,7 +70,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
-Name: "startupicon"; Description: "Start OpenClaw Companion when Windows starts"; GroupDescription: "Startup:"; Flags: unchecked
+Name: "startupicon"; Description: "Start QVerisBot Companion when Windows starts"; GroupDescription: "Startup:"; Flags: unchecked
 
 [Files]
 ; WinUI Tray app - include all files (WinUI needs DLLs, not single-file)
@@ -82,16 +82,16 @@ Source: "{#vcRedist}"; DestDir: "{tmp}"; DestName: "vc_redist.exe"; Flags: delet
 #endif
 
 [Registry]
-Root: HKCU; Subkey: "Software\Classes\openclaw"; ValueType: string; ValueName: ""; ValueData: "URL:OpenClaw Protocol"; Flags: uninsdeletekey
+Root: HKCU; Subkey: "Software\Classes\openclaw"; ValueType: string; ValueName: ""; ValueData: "URL:QVerisBot/OpenClaw Compatibility Protocol"; Flags: uninsdeletekey
 Root: HKCU; Subkey: "Software\Classes\openclaw"; ValueType: string; ValueName: "URL Protocol"; ValueData: ""
 Root: HKCU; Subkey: "Software\Classes\openclaw\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExeName}"",0"
 Root: HKCU; Subkey: "Software\Classes\openclaw\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExeName}"" ""%1"""
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
-Name: "{group}\OpenClaw Gateway Setup"; Filename: "{app}\SetupEngine\OpenClaw.SetupEngine.UI.exe"; IconFilename: "{app}\SetupEngine\OpenClaw.SetupEngine.UI.exe"
-Name: "{group}\OpenClaw Companion Settings"; Filename: "{app}\{#MyAppExeName}"; Parameters: "openclaw://commandcenter"; IconFilename: "{app}\{#MyAppExeName}"
-Name: "{group}\OpenClaw Chat"; Filename: "{app}\{#MyAppExeName}"; Parameters: "openclaw://chat"; IconFilename: "{app}\{#MyAppExeName}"
+Name: "{group}\QVerisBot Gateway Setup"; Filename: "{app}\SetupEngine\OpenClaw.SetupEngine.UI.exe"; IconFilename: "{app}\SetupEngine\OpenClaw.SetupEngine.UI.exe"
+Name: "{group}\QVerisBot Companion Settings"; Filename: "{app}\{#MyAppExeName}"; Parameters: "openclaw://commandcenter"; IconFilename: "{app}\{#MyAppExeName}"
+Name: "{group}\QVerisBot Chat"; Filename: "{app}\{#MyAppExeName}"; Parameters: "openclaw://chat"; IconFilename: "{app}\{#MyAppExeName}"
 Name: "{group}\Check for Updates"; Filename: "{app}\{#MyAppExeName}"; Parameters: "openclaw://check-updates"; IconFilename: "{app}\{#MyAppExeName}"
 Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
@@ -165,7 +165,7 @@ begin
   begin
     LocalGatewayCleanupRequested :=
       MsgBox(
-        'Do you also want to remove the OpenClaw local WSL gateway?' + #13#10#13#10 +
+        'Do you also want to remove the QVerisBot/OpenClaw local WSL gateway?' + #13#10#13#10 +
         'Choose Yes to unregister the OpenClawGateway WSL distro and remove generated local gateway state.' + #13#10 +
         'Choose No to leave the local gateway and generated local state on this computer.',
         mbConfirmation,
@@ -257,9 +257,9 @@ begin
 
     Retry :=
       MsgBox(
-        'OpenClaw could not remove the local WSL gateway.' + #13#10#13#10 +
+        'QVerisBot Companion could not remove the local WSL gateway.' + #13#10#13#10 +
         'Exit code: ' + IntToStr(ResultCode) + #13#10#13#10 +
-        'Select Retry to try again, or Cancel to continue uninstalling OpenClaw and leave local gateway state on disk.',
+        'Select Retry to try again, or Cancel to continue uninstalling QVerisBot Companion and leave local gateway state on disk.',
         mbError,
         MB_RETRYCANCEL) = IDRETRY;
   until not Retry;

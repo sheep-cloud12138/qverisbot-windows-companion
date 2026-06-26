@@ -1,0 +1,206 @@
+name: Unsigned QVerisBot Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release version without leading v
+        required: true
+        default: 0.1.0
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-installers:
+    name: Build ${{ matrix.rid }} installer
+    runs-on: ${{ matrix.rid == 'win-arm64' && 'windows-11-arm' || 'windows-latest' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - rid: win-x64
+            arch: x64
+            vc_redist_url: https://aka.ms/vc14/vc_redist.x64.exe
+            vc_redist_name: vc_redist.x64.exe
+          - rid: win-arm64
+            arch: arm64
+            vc_redist_url: https://aka.ms/vc14/vc_redist.arm64.exe
+            vc_redist_name: vc_redist.arm64.exe
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Resolve release version
+        id: version
+        shell: pwsh
+        run: |
+          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
+            $version = "${{ inputs.version }}"
+          } else {
+            $version = "${{ github.ref_name }}" -replace '^v', ''
+          }
+          if ($version -notmatch '^\d+\.\d+\.\d+([-.][A-Za-z0-9.-]+)?$') {
+            throw "Invalid release version: $version"
+          }
+          "version=$version" >> $env:GITHUB_OUTPUT
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Cache NuGet packages
+        continue-on-error: true
+        uses: actions/cache@v5
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', '**/Directory.Packages.props') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - name: Restore WinUI Tray App
+        run: dotnet restore src/OpenClaw.Tray.WinUI -r ${{ matrix.rid }}
+
+      - name: Build WinUI Tray App
+        run: dotnet build src/OpenClaw.Tray.WinUI --no-restore -c Release -r ${{ matrix.rid }}
+
+      - name: Publish WinUI Tray App
+        run: dotnet publish src/OpenClaw.Tray.WinUI -c Release -r ${{ matrix.rid }} --self-contained --no-restore -o publish
+
+      - name: Publish SetupEngine.UI
+        shell: pwsh
+        run: |
+          dotnet publish src/OpenClaw.SetupEngine.UI -c Release -r ${{ matrix.rid }} --self-contained -o publish-setup
+          New-Item -ItemType Directory -Path publish\SetupEngine -Force | Out-Null
+          Copy-Item publish-setup\* publish\SetupEngine\ -Recurse -Force
+
+      - name: Verify native runtime payload
+        shell: pwsh
+        run: |
+          $args = @(
+            "-PayloadPath", "publish",
+            "-RequireAppLocalVCRuntime"
+          )
+          if ("${{ matrix.rid }}" -eq "win-arm64") {
+            $args += "-SkipNativeLoadProbe"
+          }
+          .\scripts\Test-ReleaseNativeDependencies.ps1 @args
+
+      - name: Download Visual C++ Runtime Redistributable
+        shell: pwsh
+        run: |
+          Invoke-WebRequest -Uri "${{ matrix.vc_redist_url }}" -OutFile "${{ matrix.vc_redist_name }}"
+          $signature = Get-AuthenticodeSignature -LiteralPath "${{ matrix.vc_redist_name }}"
+          if ($signature.Status -ne "Valid") {
+            throw "${{ matrix.vc_redist_name }} Authenticode signature was $($signature.Status)."
+          }
+          $subject = if ($signature.SignerCertificate) { $signature.SignerCertificate.Subject } else { "" }
+          if ($subject -notmatch "O=Microsoft Corporation") {
+            throw "${{ matrix.vc_redist_name }} signer was not Microsoft Corporation: $subject"
+          }
+
+      - name: Install Inno Setup
+        run: choco install innosetup -y
+
+      - name: Build QVerisBot installer
+        shell: pwsh
+        run: |
+          $verifyArgs = @(
+            "-PayloadPath", "publish",
+            "-RequireAppLocalVCRuntime",
+            "-RequireInstallerVCRedist",
+            "-InstallerVCRedistPath", "${{ matrix.vc_redist_name }}"
+          )
+          if ("${{ matrix.rid }}" -eq "win-arm64") {
+            $verifyArgs += "-SkipNativeLoadProbe"
+          }
+          .\scripts\Test-ReleaseNativeDependencies.ps1 @verifyArgs
+
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" `
+            /DMyAppVersion=${{ steps.version.outputs.version }} `
+            /DMyAppArch=${{ matrix.arch }} `
+            /Dpublish=publish `
+            /DvcRedist=${{ matrix.vc_redist_name }} `
+            installer.iss
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: qverisbot-installer-${{ matrix.arch }}
+          path: Output/QVerisBot-Setup-${{ matrix.arch }}.exe
+
+  publish-release:
+    name: Publish unsigned GitHub release
+    needs: build-installers
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Resolve release version and tag
+        id: version
+        shell: pwsh
+        run: |
+          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
+            $version = "${{ inputs.version }}"
+            $tag = "v$version"
+          } else {
+            $tag = "${{ github.ref_name }}"
+            $version = $tag -replace '^v', ''
+          }
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "tag=$tag" >> $env:GITHUB_OUTPUT
+
+      - name: Download installers
+        uses: actions/download-artifact@v8
+        with:
+          pattern: qverisbot-installer-*
+          path: release-assets
+          merge-multiple: true
+
+      - name: Create SHA256SUMS
+        shell: pwsh
+        run: |
+          $files = Get-ChildItem release-assets -Filter "QVerisBot-Setup-*.exe" | Sort-Object Name
+          if ($files.Count -ne 2) {
+            throw "Expected exactly 2 installers, found $($files.Count)."
+          }
+          $lines = foreach ($file in $files) {
+            $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $file.FullName).Hash.ToLowerInvariant()
+            "$hash  $($file.Name)"
+          }
+          $lines | Set-Content -Encoding ascii release-assets\QVerisBot-SHA256SUMS.txt
+
+      - name: Create or update GitHub release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: QVerisBot Companion ${{ steps.version.outputs.version }}
+          generate_release_notes: true
+          prerelease: true
+          make_latest: false
+          files: |
+            release-assets/QVerisBot-Setup-x64.exe
+            release-assets/QVerisBot-Setup-arm64.exe
+            release-assets/QVerisBot-SHA256SUMS.txt
+          body: |
+            ## QVerisBot Companion ${{ steps.version.outputs.version }}
+
+            First-stage QVerisBot-branded Windows companion build.
+
+            ### Downloads
+            - `QVerisBot-Setup-x64.exe` - Intel/AMD 64-bit Windows
+            - `QVerisBot-Setup-arm64.exe` - Windows on ARM
+            - `QVerisBot-SHA256SUMS.txt` - SHA-256 checksums
+
+            ### Notes
+            - This first-stage installer is intentionally unsigned and may show Windows security prompts.
+            - The app keeps `openclaw://` protocol compatibility for this milestone.
+            - CLI integration prefers `qverisbot` where available and falls back to `openclaw` for compatibility.

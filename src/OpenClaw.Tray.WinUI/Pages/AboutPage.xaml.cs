@@ -145,7 +145,7 @@ public sealed partial class AboutPage : Page
     {
         try
         {
-            Process.Start(new ProcessStartInfo("https://openclaw.ai/docs") { UseShellExecute = true });
+            Process.Start(new ProcessStartInfo("https://qveris.ai") { UseShellExecute = true });
         }
         catch (Exception ex)
         {
@@ -157,7 +157,7 @@ public sealed partial class AboutPage : Page
     {
         try
         {
-            Process.Start(new ProcessStartInfo("https://github.com/openclaw/openclaw-windows-node") { UseShellExecute = true });
+            Process.Start(new ProcessStartInfo("https://github.com/QVerisAI/qverisbot-windows-companion") { UseShellExecute = true });
         }
         catch (Exception ex)
         {
