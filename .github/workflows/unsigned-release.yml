@@ -82,14 +82,14 @@ jobs:
       - name: Verify native runtime payload
         shell: pwsh
         run: |
-          $args = @(
-            "-PayloadPath", "publish",
-            "-RequireAppLocalVCRuntime"
-          )
-          if ("${{ matrix.rid }}" -eq "win-arm64") {
-            $args += "-SkipNativeLoadProbe"
+          $verifyArgs = @{
+            PayloadPath = "publish"
+            RequireAppLocalVCRuntime = $true
           }
-          .\scripts\Test-ReleaseNativeDependencies.ps1 @args
+          if ("${{ matrix.rid }}" -eq "win-arm64") {
+            $verifyArgs.SkipNativeLoadProbe = $true
+          }
+          .\scripts\Test-ReleaseNativeDependencies.ps1 @verifyArgs
 
       - name: Download Visual C++ Runtime Redistributable
         shell: pwsh
@@ -110,14 +110,14 @@ jobs:
       - name: Build QVerisBot installer
         shell: pwsh
         run: |
-          $verifyArgs = @(
-            "-PayloadPath", "publish",
-            "-RequireAppLocalVCRuntime",
-            "-RequireInstallerVCRedist",
-            "-InstallerVCRedistPath", "${{ matrix.vc_redist_name }}"
-          )
+          $verifyArgs = @{
+            PayloadPath = "publish"
+            RequireAppLocalVCRuntime = $true
+            RequireInstallerVCRedist = $true
+            InstallerVCRedistPath = "${{ matrix.vc_redist_name }}"
+          }
           if ("${{ matrix.rid }}" -eq "win-arm64") {
-            $verifyArgs += "-SkipNativeLoadProbe"
+            $verifyArgs.SkipNativeLoadProbe = $true
           }
           .\scripts\Test-ReleaseNativeDependencies.ps1 @verifyArgs
 
